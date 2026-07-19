@@ -1,0 +1,8 @@
+{
+    "cmake.debugConfig": {
+        "type": "lldb",
+        "request": "launch",
+        "expression": "native",
+        "console": "integratedTerminal",
+    }
+}
