@@ -4,6 +4,8 @@
 #include <vector>
 #include <numeric>
 #include <ranges>
+#include <complex>
+#include <numbers>
 
 #include "includes/math.hpp"
 #include "includes/raymarching.hpp"
@@ -28,8 +30,10 @@ void get_console_size(int &width, int &height) {
 #endif
 
 const float ASPECT_RATIO = 0.5f;
-const int ITERS = 150;
+const int ITERS = 100;
 const double eps = 1e-12;
+const double dist_limit = 100;
+using std::numbers::pi;
 
 int WIDTH, HEIGHT;
 double ASPECT;
@@ -47,8 +51,13 @@ inline void run() {
     const int ROW_PER_THREAD = (HEIGHT + threads_num - 1) / threads_num;
 
     math::vec3d ro = {0, 0, 0};
-    sphere sphl({-1.0, 0.0, 1.5}, 0.5), sphr({1.0, 0.0, 1.5}, 0.5);
-    std::vector<rm_object*> objects {&sphl, &sphr};
+    // sphere sphl({-1.0, 0.0, 1.5}, 0.5);
+    // sphere sphr({1.0, 0.0, 1.5}, 0.5);
+    plane alpha({0.0, 1.0, 0.0}, 1.3);
+    heart h({-0.3, 0.5, 3.5}, 1.5 / 15.0);
+    letter_I I({-1.0, 0.5, 2.5}, 1.0);
+    letter_U U({1.0, 0.5, 2.5}, 1.0);
+    std::vector<rm_object*> objects {&I, &U, &alpha, &h};
     auto min_dist = [&](const math::vec3d &p) {
         // double res = std::numeric_limits<double>::infinity();
         // for (rm_object *obj : objects) {
@@ -63,6 +72,7 @@ inline void run() {
         const double k = 0.67;
         for (int i = 1; i < objects.size(); ++i) {
             res = math::smooth_min(res, objects[i]->dist(p), k);
+            // res = std::min(res, objects[i]->dist(p));
         }
         return res;
     };
@@ -89,7 +99,7 @@ inline void run() {
                 rd.norm();
                 
                 math::vec3d ray = ro;
-                for (int it = 0; it < ITERS; ++it) {
+                for (int it = 0; it < ITERS && ray * ray < dist_limit * dist_limit; ++it) {
                     double dist = min_dist(ray);
                     if (dist < eps) break;
                     ray += rd * dist;
@@ -109,14 +119,25 @@ inline void run() {
         }
     };
 
+    auto square = [](auto x) { return x * x; };
+
+    const double base_hr = h.r;
     while (true) {
         time_now = std::chrono::steady_clock::now();
         t = std::chrono::duration<double>(time_now - time_start).count();
 
-        light_dir = math::vec3d{-std::cos(t), -1.0, -std::sin(t)}.norm();
-        sphl.c[0] = 1.5 * std::cos(t * 0.5);
-        sphr.c[0] = -1.5 * std::cos(t * 0.5);
         
+        light_dir = math::vec3d{square(std::cos(1.5 * t)), -1.0, square(std::sin(1.5 * t))}.norm();
+        // sphl.c[0] = 1.5 * std::cos(t * 0.5);
+        // I.c[0] = -1.5 * std::cos(t * 0.5);
+        // sphr.c[0] = -1.5 * std::cos(t * 0.5);
+        // U.c[0] = 1.5 * std::cos(t * 0.5);
+        
+        std::complex<double> i_rot = std::polar(2.0, t * 0.2 + pi), u_rot = std::polar(3.0, t * 0.2);
+        I.c[0] = h.c[0] + i_rot.real(), I.c[2] = h.c[2] + 0.5 * i_rot.imag();
+        U.c[0] = h.c[0] + u_rot.real(), U.c[2] = h.c[2] + 0.5 * u_rot.imag();
+
+        h.r = base_hr * (1.0 + 0.2 * std::pow(0.5 + 0.5 * std::sin(0.5 * 2 * pi * t), 4));
 
         for (int i = 0; i < threads_num; ++i) {
             threads[i] = std::thread(render_rows, i * ROW_PER_THREAD, (i + 1) * ROW_PER_THREAD);

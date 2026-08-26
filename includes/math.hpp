@@ -34,6 +34,8 @@ namespace math {
 
         template<typename U>
         vector& operator*=(const U&);
+        template<typename U>
+        vector& operator/=(const U&);
 
         friend T operator* <>(const vector&, const vector&);
         friend std::ostream& operator<< <>(std::ostream&, const vector&);
@@ -103,6 +105,15 @@ namespace math {
         return *this;
     }
 
+    template<typename T, size_t N>
+    template<typename U>
+    vector<T, N>& vector<T, N>::operator/=(const U& x) {
+        for (int i = 0; i < N; ++i) {
+            data[i] /= x;
+        }
+        return *this;
+    }
+
     template<typename T, size_t N, typename U>
     vector<T, N> operator*(vector<T, N> a, const U &b) { return (a *= b); }
     
@@ -138,7 +149,7 @@ namespace math {
 
     template<typename T, size_t N> 
     inline vector<T, N>& vector<T, N>::norm() {
-        return (*this) *= (1 / length());
+        return (*this) /= length();
     }
     template<typename T, size_t N> 
     inline vector<T, N> norm(vector<T, N> v) {
