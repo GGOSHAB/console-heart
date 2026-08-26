@@ -1,3 +1,0 @@
-/Users/ggoshab/cpp/console-heart/build/CMakeFiles/console-heart.dir
-/Users/ggoshab/cpp/console-heart/build/CMakeFiles/edit_cache.dir
-/Users/ggoshab/cpp/console-heart/build/CMakeFiles/rebuild_cache.dir
